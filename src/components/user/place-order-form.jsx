@@ -15,15 +15,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
-import { addDoc, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getLoggedInUser } from '@/lib/data';
+
 
 const orderSchema = z.object({
   mealChoice: z.enum(['Rice + 4 Rotis', '5 Rotis']),
 });
 
-export function PlaceOrderForm({ remainingMeals: initialRemainingMeals }) {
+export function PlaceOrderForm({ remainingMeals: initialRemainingMeals, userId, userName }) {
   const [lunchOrdered, setLunchOrdered] = useState(false);
   const [dinnerOrdered, setDinnerOrdered] = useState(false);
   const [remainingMeals, setRemainingMeals] = useState(initialRemainingMeals);
@@ -46,12 +46,10 @@ export function PlaceOrderForm({ remainingMeals: initialRemainingMeals }) {
 
     const { mealChoice } = form.getValues();
     
-    // In a real app, this would trigger a server action to deduct a meal.
     try {
-      const user = await getLoggedInUser();
       const newOrder = {
-        userId: user.id,
-        userName: user.name,
+        userId: userId,
+        userName: userName,
         mealType,
         mealChoice,
         date: new Date().toISOString().split('T')[0],
@@ -61,7 +59,7 @@ export function PlaceOrderForm({ remainingMeals: initialRemainingMeals }) {
       
       await addDoc(collection(db, 'orders'), newOrder);
 
-      const userRef = doc(db, 'users', user.id);
+      const userRef = doc(db, 'users', userId);
       const newRemainingMeals = remainingMeals - 1;
       await updateDoc(userRef, { remainingMeals: newRemainingMeals });
       setRemainingMeals(newRemainingMeals);

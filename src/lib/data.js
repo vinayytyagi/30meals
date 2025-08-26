@@ -12,6 +12,7 @@ import {
     setDoc,
     writeBatch
 } from "firebase/firestore";
+import { onAuthStateChanged } from 'firebase/auth';
 
 /**
  * @typedef {object} User
@@ -92,9 +93,17 @@ seedInitialData().catch(console.error);
 
 // --- User Functions ---
 
+const getCurrentUser = () => {
+    return new Promise((resolve, reject) => {
+      const unsubscribe = onAuthStateChanged(auth, user => {
+        unsubscribe();
+        resolve(user);
+      }, reject);
+    });
+  };
+
 export const getLoggedInUser = async () => {
-    // In a real app, you'd get the logged-in user's ID from an auth context.
-    const currentUser = auth.currentUser;
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         throw new Error("User not authenticated");
     }

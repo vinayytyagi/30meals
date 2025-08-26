@@ -1,4 +1,7 @@
-import { getLoggedInUser, getOrderHistory, getAnalyticsData } from '@/lib/data';
+'use client';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/auth/auth-provider';
+import { getOrderHistory, getAnalyticsData } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -25,6 +28,7 @@ import {
   } from "@/components/ui/tooltip"
 
 function Past5DaysSummary({ data }) {
+    if (!data) return null;
     const today = new Date();
     const dates = Array.from({ length: 5 }).map((_, i) => {
         const date = new Date();
@@ -66,10 +70,39 @@ function Past5DaysSummary({ data }) {
     );
 }
 
-export default async function OrderHistoryPage() {
-  const user = await getLoggedInUser();
-  const orders = await getOrderHistory(user.id);
-  const analytics = await getAnalyticsData(user.id);
+export default function OrderHistoryPage() {
+  const { user, loading: authLoading } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if(authLoading) return;
+    if(!user) {
+        setLoading(false);
+        return;
+    }
+    const fetchData = async () => {
+        setLoading(true);
+        const [orderData, analyticsData] = await Promise.all([
+            getOrderHistory(user.uid),
+            getAnalyticsData(user.uid)
+        ]);
+        setOrders(orderData);
+        setAnalytics(analyticsData);
+        setLoading(false);
+    }
+    fetchData();
+  }, [user, authLoading]);
+  
+  if (loading || authLoading) {
+    return <div className="p-8">Loading order history...</div>
+  }
+
+  if (!user) {
+    return <div className="p-8">Please log in to view your order history.</div>
+  }
+
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
@@ -89,13 +122,15 @@ export default async function OrderHistoryPage() {
                     <History className="h-6 w-6 text-accent" />
                     <CardTitle>Your Orders</CardTitle>
                 </div>
-                <div className='text-right'>
-                    <h4 className='text-sm font-medium text-muted-foreground'>Last 5 Days</h4>
-                    <Past5DaysSummary data={analytics.calendarData} />
-                </div>
+                {analytics && (
+                    <div className='text-right'>
+                        <h4 className='text-sm font-medium text-muted-foreground'>Last 5 Days</h4>
+                        <Past5DaysSummary data={analytics.calendarData} />
+                    </div>
+                )}
             </div>
           <CardDescription>
-            {orders.length} orders found for {user.name}.
+            {orders.length} orders found.
           </CardDescription>
         </CardHeader>
         <CardContent>

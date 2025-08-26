@@ -1,4 +1,7 @@
-import { getLoggedInUser, getAnalyticsData } from '@/lib/data';
+'use client';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/auth/auth-provider';
+import { getAnalyticsData } from '@/lib/data';
 import { AnalyticsTabs } from '@/components/shared/analytics-tabs';
 import { Suspense } from 'react';
 
@@ -10,9 +13,30 @@ function AnalyticsFallback() {
     )
 }
 
-export default async function UserAnalyticsPage() {
-  const user = await getLoggedInUser();
-  const analytics = await getAnalyticsData(user.id);
+export default function UserAnalyticsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if(authLoading) return;
+    if(!user) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      setLoading(true);
+      const data = await getAnalyticsData(user.uid);
+      setAnalytics(data);
+      setLoading(false);
+    }
+    fetchData();
+  }, [user, authLoading]);
+
+  if(loading || authLoading) {
+    return <AnalyticsFallback />;
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
@@ -24,11 +48,11 @@ export default async function UserAnalyticsPage() {
           An overview of your personal meal ordering habits.
         </p>
       </header>
-
-      <Suspense fallback={<AnalyticsFallback />}>
-        <AnalyticsTabs analytics={analytics} role="user" />
-      </Suspense>
-
+        {analytics ? (
+            <AnalyticsTabs analytics={analytics} role="user" />
+        ) : (
+            <p>No analytics data available yet.</p>
+        )}
     </div>
   );
 }
