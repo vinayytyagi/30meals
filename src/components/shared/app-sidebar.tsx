@@ -12,7 +12,17 @@ import {
   SidebarTrigger,
   SidebarContent,
 } from '@/components/ui/sidebar';
-import { UtensilsCrossed, LogOut, type LucideIcon } from 'lucide-react';
+import { 
+  UtensilsCrossed, 
+  LogOut, 
+  type LucideIcon,
+  ClipboardList, 
+  ChefHat, 
+  Users, 
+  BellDot,
+  Home,
+  History
+} from 'lucide-react';
 import { Button } from '../ui/button';
 
 type NavLink = {
@@ -21,12 +31,25 @@ type NavLink = {
   icon: LucideIcon;
 };
 
+const adminNavLinks: NavLink[] = [
+  { href: '/admin/dashboard', label: 'Orders', icon: ClipboardList },
+  { href: '/admin/menu', label: 'Set Menu', icon: ChefHat },
+  { href: '/admin/users', label: 'Manage Users', icon: Users },
+  { href: '/admin/notifications', label: 'Notifications', icon: BellDot },
+];
+
+const userNavLinks: NavLink[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/dashboard/history', label: 'Order History', icon: History },
+];
+
 type AppSidebarProps = {
-  navLinks: NavLink[];
+  role: 'admin' | 'user';
 };
 
-export function AppSidebar({ navLinks }: AppSidebarProps) {
+export function AppSidebar({ role }: AppSidebarProps) {
   const pathname = usePathname();
+  const navLinks = role === 'admin' ? adminNavLinks : userNavLinks;
 
   return (
     <>
