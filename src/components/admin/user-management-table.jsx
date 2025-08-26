@@ -27,6 +27,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../ui/form';
 import { Last5DaysCell } from '../shared/last-5-days-cell';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const editMealsSchema = z.object({
   meals: z.coerce.number().min(0, 'Cannot be negative').max(100, 'Cannot be more than 100'),
@@ -48,8 +50,11 @@ export function UserManagementTable({ users: initialUsers }) {
     setIsDialogOpen(true);
   };
   
-  const handleEditMeals = (values) => {
+  const handleEditMeals = async (values) => {
     if (selectedUser) {
+      const userRef = doc(db, 'users', selectedUser.id);
+      await updateDoc(userRef, { remainingMeals: values.meals });
+
       setUsers(prevUsers =>
         prevUsers.map(u =>
           u.id === selectedUser.id ? { ...u, remainingMeals: values.meals } : u

@@ -27,6 +27,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../ui/form';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const otpSchema = z.object({
   otp: z.string().length(6, 'OTP must be 6 digits.'),
@@ -49,8 +51,11 @@ export function OrdersTable({ orders: initialOrders }) {
     setIsDialogOpen(true);
   };
 
-  const handleConfirmDelivery = (values) => {
+  const handleConfirmDelivery = async (values) => {
     if (selectedOrder && values.otp === selectedOrder.deliveryOtp) {
+      const orderRef = doc(db, 'orders', selectedOrder.id);
+      await updateDoc(orderRef, { status: 'Delivered' });
+
       setOrders((prevOrders) =>
         prevOrders.map((o) =>
           o.id === selectedOrder.id ? { ...o, status: 'Delivered' } : o

@@ -15,14 +15,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
+import { addDoc, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { getLoggedInUser } from '@/lib/data';
 
 const orderSchema = z.object({
   mealChoice: z.enum(['Rice + 4 Rotis', '5 Rotis']),
 });
 
-export function PlaceOrderForm({ remainingMeals }) {
+export function PlaceOrderForm({ remainingMeals: initialRemainingMeals }) {
   const [lunchOrdered, setLunchOrdered] = useState(false);
   const [dinnerOrdered, setDinnerOrdered] = useState(false);
+  const [remainingMeals, setRemainingMeals] = useState(initialRemainingMeals);
   const { toast } = useToast();
 
   const form = useForm({
@@ -30,7 +34,7 @@ export function PlaceOrderForm({ remainingMeals }) {
     defaultValues: { mealChoice: 'Rice + 4 Rotis' },
   });
 
-  const handleOrder = (mealType) => {
+  const handleOrder = async (mealType) => {
     if (remainingMeals <= 0) {
       toast({
         variant: 'destructive',
@@ -41,16 +45,45 @@ export function PlaceOrderForm({ remainingMeals }) {
     }
 
     const { mealChoice } = form.getValues();
-    toast({
-      title: 'Order Placed!',
-      description: `Your ${mealType} order for "${mealChoice}" has been placed.`,
-    });
-    if (mealType === 'Lunch') {
-      setLunchOrdered(true);
-    } else {
-      setDinnerOrdered(true);
-    }
+    
     // In a real app, this would trigger a server action to deduct a meal.
+    try {
+      const user = await getLoggedInUser();
+      const newOrder = {
+        userId: user.id,
+        userName: user.name,
+        mealType,
+        mealChoice,
+        date: new Date().toISOString().split('T')[0],
+        status: 'Pending',
+        deliveryOtp: Math.floor(100000 + Math.random() * 900000).toString(),
+      };
+      
+      await addDoc(collection(db, 'orders'), newOrder);
+
+      const userRef = doc(db, 'users', user.id);
+      const newRemainingMeals = remainingMeals - 1;
+      await updateDoc(userRef, { remainingMeals: newRemainingMeals });
+      setRemainingMeals(newRemainingMeals);
+      
+      toast({
+        title: 'Order Placed!',
+        description: `Your ${mealType} order for "${mealChoice}" has been placed.`,
+      });
+
+      if (mealType === 'Lunch') {
+        setLunchOrdered(true);
+      } else {
+        setDinnerOrdered(true);
+      }
+    } catch (error) {
+      console.error("Order placement failed", error);
+      toast({
+        variant: 'destructive',
+        title: 'Order Failed',
+        description: 'Could not place your order. Please try again.',
+      });
+    }
   };
 
   return (

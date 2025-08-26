@@ -1,3 +1,18 @@
+import { db } from './firebase';
+import { 
+    collection, 
+    getDocs, 
+    getDoc, 
+    doc, 
+    query, 
+    where, 
+    addDoc, 
+    Timestamp,
+    orderBy,
+    setDoc,
+    writeBatch
+} from "firebase/firestore";
+
 /**
  * @typedef {object} User
  * @property {string} id
@@ -48,82 +63,87 @@
  * @property {string} userId
  */
 
+ // --- Seeding Function for Initial Data ---
+const seedInitialData = async () => {
+    const sabjisCollection = collection(db, 'sabjis');
+    const sabjisSnapshot = await getDocs(sabjisCollection);
+    if (sabjisSnapshot.empty) {
+        console.log("Seeding initial sabjis and users...");
+        const batch = writeBatch(db);
+        const allSabjis = [
+            { id: 'sabji-1', name: 'Aloo Gobi', description: 'Potatoes and cauliflower' },
+            { id: 'sabji-2', name: 'Palak Paneer', description: 'Spinach and cottage cheese' },
+            { id: 'sabji-3', name: 'Chole', description: 'Spicy chickpeas' },
+            { id: 'sabji-4', name: 'Bhindi Masala', description: 'Spiced okra' },
+            { id: 'sabji-5', name: 'Dal Tadka', description: 'Yellow lentils with tempering' },
+            { id: 'sabji-6', name: 'Rajma', description: 'Red kidney bean curry'},
+        ];
+        allSabjis.forEach(sabji => {
+            const docRef = doc(db, 'sabjis', sabji.id);
+            batch.set(docRef, sabji);
+        });
 
-const mockUsers = [
-  { id: 'user-1', name: 'Ananya Sharma', phone: '9876543210', remainingMeals: 18 },
-  { id: 'user-2', name: 'Rohan Verma', phone: '8765432109', remainingMeals: 25 },
-  { id: 'user-3', name: 'Priya Singh', phone: '7654321098', remainingMeals: 5 },
-];
+        const users = [
+          { id: 'user-1', name: 'Ananya Sharma', phone: '9876543210', remainingMeals: 18 },
+          { id: 'user-2', name: 'Rohan Verma', phone: '8765432109', remainingMeals: 25 },
+          { id: 'user-3', name: 'Priya Singh', phone: '7654321098', remainingMeals: 5 },
+        ];
 
-const mockOrders = [
-    // Previous orders
-    { id: 'order-1', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: '2023-10-26', status: 'Delivered', deliveryOtp: '112233' },
-    { id: 'order-2', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Dinner', mealChoice: '5 Rotis', date: '2023-10-26', status: 'Delivered', deliveryOtp: '445566' },
-    { id: 'order-3', userId: 'user-2', userName: 'Rohan Verma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: '2023-10-27', status: 'Pending', deliveryOtp: '778899' },
-    { id: 'order-4', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: '5 Rotis', date: '2023-10-27', status: 'Pending', deliveryOtp: '123123' },
-  
-    // Add more orders for better analytics
-    // Today's date
-    { id: 'order-5', userId: 'user-2', userName: 'Rohan Verma', mealType: 'Dinner', mealChoice: '5 Rotis', date: new Date().toISOString().split('T')[0], status: 'Pending', deliveryOtp: '234234' },
-    { id: 'order-6', userId: 'user-3', userName: 'Priya Singh', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date().toISOString().split('T')[0], status: 'Pending', deliveryOtp: '345345' },
-    
-    // Yesterday
-    { id: 'order-7', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '456456' },
-    { id: 'order-8', userId: 'user-3', userName: 'Priya Singh', mealType: 'Lunch', mealChoice: '5 Rotis', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '567567' },
-    { id: 'order-9', userId: 'user-3', userName: 'Priya Singh', mealType: 'Dinner', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '678678' },
-  
-    // Two days ago
-    { id: 'order-10', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Dinner', mealChoice: '5 Rotis', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '789789' },
-    { id: 'order-11', userId: 'user-2', userName: 'Rohan Verma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '890890' },
+        users.forEach(user => {
+            const userRef = doc(db, 'users', user.id);
+            batch.set(userRef, {name: user.name, phone: user.phone, remainingMeals: user.remainingMeals});
+        });
 
-    // Four days ago
-    { id: 'order-12', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '111222' },
-];
+        await batch.commit();
+        console.log("Initial data seeded.");
+    }
+};
 
-const allSabjis = [
-    { id: 'sabji-1', name: 'Aloo Gobi', description: 'Potatoes and cauliflower' },
-    { id: 'sabji-2', name: 'Palak Paneer', description: 'Spinach and cottage cheese' },
-    { id: 'sabji-3', name: 'Chole', description: 'Spicy chickpeas' },
-    { id: 'sabji-4', name: 'Bhindi Masala', description: 'Spiced okra' },
-    { id: 'sabji-5', name: 'Dal Tadka', description: 'Yellow lentils with tempering' },
-    { id: 'sabji-6', name: 'Rajma', description: 'Red kidney bean curry'},
-];
-
-let todaysMenu = [allSabjis[1], allSabjis[4]];
-
-/** @type {Message[]} */
-let mockMessages = [
-    { id: 'msg-1', userId: 'user-1', text: 'Hi, I have a question about my order.', sender: 'user', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-    { id: 'msg-2', userId: 'user-1', text: 'Sure, how can I help you?', sender: 'admin', timestamp: new Date(Date.now() - 1000 * 60 * 4).toISOString() },
-    { id: 'msg-3', userId: 'user-2', text: 'When will my lunch be delivered?', sender: 'user', timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
-];
-
+// Call seeding function
+seedInitialData().catch(console.error);
 
 // --- User Functions ---
 
 export const getLoggedInUser = async () => {
-  return new Promise(resolve => setTimeout(() => resolve(mockUsers[0]), 500));
+    // In a real app, you'd get the logged-in user's ID from an auth context.
+    // For now, we'll continue to mock getting 'user-1'.
+    const userDoc = await getDoc(doc(db, 'users', 'user-1'));
+    if (userDoc.exists()) {
+        return { id: userDoc.id, ...userDoc.data() };
+    }
+    throw new Error("User not found");
 };
 
 export const getOrderHistory = async (userId) => {
-  const userOrders = mockOrders.filter(order => order.userId === userId).sort((a, b) => new Date(b.date) - new Date(a.date));
-  return new Promise(resolve => setTimeout(() => resolve(userOrders), 500));
+    const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('date', 'desc'));
+    const querySnapshot = await getDocs(ordersQuery);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 export const getTodaysMenu = async () => {
-  return new Promise(resolve => setTimeout(() => resolve(todaysMenu), 300));
+    const menuDoc = await getDoc(doc(db, 'menu', 'todaysMenu'));
+    if (menuDoc.exists() && menuDoc.data().items) {
+        return menuDoc.data().items;
+    }
+    return []; // Return empty array if no menu is set for today
 };
 
 // --- Admin Functions ---
 
-const getMealStartDate = (userId) => {
-    const userOrders = mockOrders
+const _fetchAllOrders = async () => {
+    const ordersCollection = collection(db, 'orders');
+    const ordersSnapshot = await getDocs(ordersCollection);
+    return ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+const getMealStartDate = (userId, allOrders) => {
+    const userOrders = allOrders
         .filter(o => o.userId === userId)
         .sort((a,b) => new Date(a.date) - new Date(b.date));
     return userOrders.length > 0 ? userOrders[0].date : null;
 }
 
-const calculateLast5Days = (userId) => {
+const calculateLast5Days = (userId, allOrders) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const last5DaysData = [];
@@ -133,41 +153,47 @@ const calculateLast5Days = (userId) => {
         date.setDate(today.getDate() - i);
         const dateString = date.toISOString().split('T')[0];
         
-        const mealsOnDay = mockOrders.filter(o => o.userId === userId && o.date.startsWith(dateString)).length;
+        const mealsOnDay = allOrders.filter(o => o.userId === userId && o.date.startsWith(dateString)).length;
         last5DaysData.push(mealsOnDay);
     }
     return last5DaysData;
 };
 
 export const getAllUsers = async () => {
-    const usersWithData = mockUsers.map(user => ({
+    const usersCollection = collection(db, 'users');
+    const usersSnapshot = await getDocs(usersCollection);
+    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // This is inefficient in a real app. You'd typically denormalize this data.
+    const allOrders = await _fetchAllOrders(); 
+
+    const usersWithData = users.map(user => ({
         ...user,
-        last5Days: calculateLast5Days(user.id),
-        mealStartDate: getMealStartDate(user.id),
+        last5Days: calculateLast5Days(user.id, allOrders),
+        mealStartDate: getMealStartDate(user.id, allOrders),
     }));
-    return new Promise(resolve => setTimeout(() => resolve(usersWithData), 500));
+
+    return usersWithData;
 };
 
 export const getAllOrders = async () => {
-    return new Promise(resolve => setTimeout(() => resolve(mockOrders), 500));
+    return await _fetchAllOrders();
 };
 
 export const getAllSabjis = async () => {
-    return new Promise(resolve => setTimeout(() => resolve(allSabjis), 200));
+    const sabjisCollection = collection(db, 'sabjis');
+    const sabjisSnapshot = await getDocs(sabjisCollection);
+    return sabjisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 export const setTodaysMenu = async (menuItems) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            todaysMenu = menuItems;
-            resolve();
-        }, 500)
-    });
+    await setDoc(doc(db, "menu", "todaysMenu"), { items: menuItems });
 }
 
 // --- Analytics Functions ---
 export const getAnalyticsData = async (userId = null) => {
-    const ordersToProcess = userId ? mockOrders.filter(o => o.userId === userId) : mockOrders;
+    const allOrders = await _fetchAllOrders();
+    const ordersToProcess = userId ? allOrders.filter(o => o.userId === userId) : allOrders;
     
     // For admin view, we might want to get all users data
     const allUsers = userId ? null : await getAllUsers();
@@ -239,7 +265,7 @@ export const getAnalyticsData = async (userId = null) => {
         mealsSkipped: 0, // Needs logic
     };
 
-    return new Promise(resolve => setTimeout(() => resolve(data), 800));
+    return data;
 };
 
 
@@ -251,7 +277,8 @@ export const getAnalyticsData = async (userId = null) => {
  * @param {string} message 
  */
 const sendWhatsAppMessage = async (phone, message) => {
-    console.log(`Sending WhatsApp message to ${phone}: "${message}"`);
+    // In a real app, this would call a service like Twilio.
+    console.log(`Simulating WhatsApp message to ${phone}: "${message}"`);
     return Promise.resolve();
 }
 
@@ -262,18 +289,21 @@ const sendWhatsAppMessage = async (phone, message) => {
  * @param {'user' | 'admin'} sender - Who is sending the message.
  */
 export const sendMessageToUsers = async (userIds, messageText, sender) => {
-    const recipients = mockUsers.filter(user => userIds.includes(user.id));
+    const allUsers = await getAllUsers();
+    const recipients = allUsers.filter(user => userIds.includes(user.id));
     
-    const newMessages = recipients.map(user => ({
-        id: `msg-${Date.now()}-${user.id}`,
-        userId: user.id,
-        text: messageText,
-        sender: sender,
-        timestamp: new Date().toISOString(),
-    }));
+    const messagesCollection = collection(db, 'messages');
 
-    mockMessages.push(...newMessages);
-    console.log(`Saving ${newMessages.length} new messages.`);
+    const messagePromises = recipients.map(user => {
+        return addDoc(messagesCollection, {
+            userId: user.id,
+            text: messageText,
+            sender: sender,
+            timestamp: Timestamp.now(),
+        });
+    });
+
+    await Promise.all(messagePromises);
 
     // Only send WhatsApp for admin broadcasts for this mock
     if (sender === 'admin') {
@@ -281,8 +311,6 @@ export const sendMessageToUsers = async (userIds, messageText, sender) => {
           await sendWhatsAppMessage(user.phone, messageText);
       }
     }
-    
-    return new Promise(resolve => setTimeout(resolve, 500));
 };
 
 /**
@@ -291,7 +319,22 @@ export const sendMessageToUsers = async (userIds, messageText, sender) => {
  * @returns {Promise<Message[]>}
  */
 export const getMessages = async (userId) => {
-    if (!userId) return Promise.resolve([]);
-    const messages = mockMessages.filter(msg => msg.userId === userId).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    return new Promise(resolve => setTimeout(() => resolve(messages), 300));
+    if (!userId) return [];
+    
+    const messagesQuery = query(
+        collection(db, 'messages'), 
+        where('userId', '==', userId),
+        orderBy('timestamp', 'asc')
+    );
+
+    const querySnapshot = await getDocs(messagesQuery);
+    
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            timestamp: data.timestamp.toDate().toISOString(),
+        }
+    });
 };
