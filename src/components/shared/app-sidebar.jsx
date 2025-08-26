@@ -20,7 +20,8 @@ import {
   Users, 
   Home,
   History,
-  MessageSquare
+  MessageSquare,
+  BellDot
 } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -29,6 +30,7 @@ const adminNavLinks = [
   { href: '/admin/menu', label: 'Set Menu', icon: ChefHat },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
   { href: '/admin/chat', label: 'Chat', icon: MessageSquare },
+  { href: '/admin/notifications', label: 'Notifications', icon: BellDot },
 ];
 
 const userNavLinks = [

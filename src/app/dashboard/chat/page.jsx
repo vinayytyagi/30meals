@@ -7,8 +7,18 @@ import {
     CardHeader,
     CardTitle,
   } from '@/components/ui/card';
+import { Suspense } from 'react';
+
+function ChatFallback() {
+    return (
+        <div className="flex items-center justify-center h-[60vh] text-muted-foreground">
+            <p>Loading Chat Interface...</p>
+        </div>
+    )
+}
 
 export default async function ChatPage() {
+    // We only need the user ID here, the component will fetch the messages
     const user = await getLoggedInUser();
     const initialMessages = await getMessages(user.id);
   
@@ -31,7 +41,9 @@ export default async function ChatPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ChatInterface initialMessages={initialMessages} userId={user.id} />
+            <Suspense fallback={<ChatFallback />}>
+                <ChatInterface initialMessages={initialMessages} userId={user.id} />
+            </Suspense>
           </CardContent>
         </Card>
       </div>

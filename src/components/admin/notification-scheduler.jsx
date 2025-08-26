@@ -52,6 +52,7 @@ export function NotificationScheduler() {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      notificationType: 'menu reminder',
       userBehavior:
         'User typically orders lunch between 11:00 AM and 11:30 AM on weekdays. They are most responsive to messages around 10:30 AM.',
     },
@@ -60,9 +61,14 @@ export function NotificationScheduler() {
   async function onSubmit(values) {
     setIsLoading(true);
     setResult(null);
-    const suggestion = await suggestNotificationTime(values);
-    setResult(suggestion);
-    setIsLoading(false);
+    try {
+      const suggestion = await suggestNotificationTime(values);
+      setResult(suggestion);
+    } catch (error) {
+      console.error("Failed to get suggestion:", error)
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -93,6 +99,7 @@ export function NotificationScheduler() {
                         <SelectItem value="menu reminder">Menu Reminder</SelectItem>
                         <SelectItem value="delivery update">Delivery Update</SelectItem>
                         <SelectItem value="order confirmation">Order Confirmation</SelectItem>
+                        <SelectItem value="promotional offer">Promotional Offer</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -148,7 +155,7 @@ export function NotificationScheduler() {
             <div className="space-y-6">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Suggested Time</h3>
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/10 text-primary-foreground">
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/10">
                     <Clock className="h-8 w-8 text-primary" />
                     <p className="text-3xl font-bold text-primary">{result.suggestedTime}</p>
                 </div>

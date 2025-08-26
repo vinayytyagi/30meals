@@ -11,17 +11,30 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
-import { Send, Users, User } from 'lucide-react';
+import { Send, Users, User, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const chatSchema = z.object({
   message: z.string().min(1, 'Message cannot be empty.'),
 });
 
+function ChatLoader() {
+    return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+            <div className="animate-pulse flex flex-col items-center gap-2">
+                <MessageSquare className="h-8 w-8" />
+                <span>Loading messages...</span>
+            </div>
+        </div>
+    );
+}
+
+
 export function AdminChat({ users, initialMessages }) {
   const [selectedUsers, setSelectedUsers] = useState([users[0]?.id].filter(Boolean));
   const [messages, setMessages] = useState(initialMessages);
   const [isSending, setIsSending] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const messagesEndRef = useRef(null);
   const { toast } = useToast();
 
@@ -38,8 +51,10 @@ export function AdminChat({ users, initialMessages }) {
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedUsers.length === 1) {
+        setIsLoadingMessages(true);
         const newMessages = await getMessages(selectedUsers[0]);
         setMessages(newMessages);
+        setIsLoadingMessages(false);
       } else {
         setMessages([]); // Clear messages for multi-select
       }
@@ -50,20 +65,21 @@ export function AdminChat({ users, initialMessages }) {
     // Poll for new messages when viewing a single conversation
     useEffect(() => {
         let interval;
-        if (selectedUsers.length === 1) {
+        if (selectedUsers.length === 1 && !isMultiSelect) {
             const userId = selectedUsers[0];
             interval = setInterval(async () => {
                 const latestMessages = await getMessages(userId);
                 setMessages(currentMessages => {
+                    // A simple length check is enough for this mock setup
                     if (latestMessages.length !== currentMessages.length) {
                         return latestMessages;
                     }
                     return currentMessages;
                 });
-            }, 3000);
+            }, 5000); // Poll every 5 seconds
         }
         return () => clearInterval(interval);
-    }, [selectedUsers]);
+    }, [selectedUsers, isMultiSelect]);
 
   const form = useForm({
     resolver: zodResolver(chatSchema),
@@ -71,10 +87,17 @@ export function AdminChat({ users, initialMessages }) {
   });
 
   const handleSendMessage = async (values) => {
+    if(selectedUsers.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'No User Selected',
+            description: 'Please select at least one user to send a message.',
+        });
+        return;
+    }
     setIsSending(true);
     try {
-      await sendMessageToUsers(selectedUsers, values.message);
-      form.reset();
+      await sendMessageToUsers(selectedUsers, values.message, 'admin');
       
       if(!isMultiSelect) {
         // Optimistically add to single chat
@@ -89,9 +112,10 @@ export function AdminChat({ users, initialMessages }) {
       } else {
         toast({
             title: 'Message Sent!',
-            description: `Your message has been sent to ${selectedUsers.length} users.`,
+            description: `Your message has been broadcast to ${selectedUsers.length} users.`,
         });
       }
+      form.reset();
 
     } catch (error) {
       toast({
@@ -107,13 +131,16 @@ export function AdminChat({ users, initialMessages }) {
   const handleUserSelection = (userId) => {
     const isSelected = selectedUsers.includes(userId);
     if(isSelected) {
-        // If it's the last selected user, do nothing to prevent empty selection
-        if(selectedUsers.length === 1) return;
+        if(selectedUsers.length === 1 && selectedUsers[0] === userId) return; // Prevent deselecting the last user
         setSelectedUsers(prev => prev.filter(id => id !== userId));
     } else {
         setSelectedUsers(prev => [...prev, userId]);
     }
   };
+  
+  const handleSingleUserSelect = (userId) => {
+    setSelectedUsers([userId]);
+  }
 
   const selectAllUsers = () => {
     setSelectedUsers(users.map(u => u.id));
@@ -121,34 +148,34 @@ export function AdminChat({ users, initialMessages }) {
   
   const deselectAllUsers = () => {
     if (users.length > 0) {
+        // Keep the first user selected instead of clearing completely
         setSelectedUsers([users[0].id]);
     }
   }
 
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-[calc(100vh_-_120px)]">
       {/* User List Sidebar */}
       <div className="w-1/3 border-r flex flex-col">
         <div className='p-4 border-b'>
             <h2 className="text-lg font-semibold">Users ({selectedUsers.length}/{users.length})</h2>
             <div className='flex gap-2 mt-2'>
-                <Button size="sm" variant="outline" onClick={selectAllUsers}>All</Button>
-                <Button size="sm" variant="outline" onClick={deselectAllUsers}>Clear</Button>
+                <Button size="sm" variant="outline" onClick={selectAllUsers}>Select All</Button>
+                <Button size="sm" variant="outline" onClick={deselectAllUsers}>Clear Selection</Button>
             </div>
         </div>
         <ScrollArea className="flex-1">
           {users.map((user) => (
             <div
               key={user.id}
-              onClick={() => handleUserSelection(user.id)}
               className={cn(
                 'p-4 cursor-pointer border-b flex items-center gap-3',
                 selectedUsers.includes(user.id) ? 'bg-primary/10' : 'hover:bg-muted/50'
               )}
             >
               <Checkbox checked={selectedUsers.includes(user.id)} onCheckedChange={() => handleUserSelection(user.id)} />
-              <div>
+              <div onClick={() => handleSingleUserSelect(user.id)} className="flex-1">
                 <p className="font-semibold">{user.name}</p>
                 <p className="text-sm text-muted-foreground">{user.phone}</p>
               </div>
@@ -167,13 +194,20 @@ export function AdminChat({ users, initialMessages }) {
             </h3>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-4">
+          <ScrollArea className="flex-1 pr-4">
             {isMultiSelect ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <p>Broadcasting to multiple users. Messages will not be displayed here.</p>
+                    <p>Broadcasting to multiple users. Chat history is not available in this mode.</p>
+                </div>
+            ) : isLoadingMessages ? (
+                <ChatLoader />
+            ) : messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <p>No messages yet. Start the conversation!</p>
                 </div>
             ) : (
-                messages.map((msg) => (
+                <div className='space-y-4'>
+                {messages.map((msg) => (
                     <div
                         key={msg.id}
                         className={cn(
@@ -186,7 +220,7 @@ export function AdminChat({ users, initialMessages }) {
                             'max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl',
                             msg.sender === 'admin'
                             ? 'bg-primary text-primary-foreground rounded-br-none'
-                            : 'bg-muted text-muted-foreground rounded-bl-none'
+                            : 'bg-card text-card-foreground rounded-bl-none border'
                         )}
                         >
                         <p className="text-sm">{msg.text}</p>
@@ -195,12 +229,13 @@ export function AdminChat({ users, initialMessages }) {
                         </p>
                         </div>
                     </div>
-                ))
+                ))}
+                </div>
             )}
             <div ref={messagesEndRef} />
-          </div>
+          </ScrollArea>
 
-          <div className="mt-4">
+          <div className="mt-4 pt-4 border-t">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSendMessage)} className="flex gap-2">
                 <FormField
@@ -209,7 +244,7 @@ export function AdminChat({ users, initialMessages }) {
                   render={({ field }) => (
                     <FormItem className="flex-1">
                       <FormControl>
-                        <Input {...field} placeholder="Type your message..." autoComplete="off" disabled={selectedUsers.length === 0} />
+                        <Input {...field} placeholder={isMultiSelect ? "Broadcast a message..." : "Type your message..."} autoComplete="off" disabled={selectedUsers.length === 0} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

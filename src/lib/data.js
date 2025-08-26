@@ -75,6 +75,7 @@ let todaysMenu = [allSabjis[1], allSabjis[4]];
 let mockMessages = [
     { id: 'msg-1', userId: 'user-1', text: 'Hi, I have a question about my order.', sender: 'user', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
     { id: 'msg-2', userId: 'user-1', text: 'Sure, how can I help you?', sender: 'admin', timestamp: new Date(Date.now() - 1000 * 60 * 4).toISOString() },
+    { id: 'msg-3', userId: 'user-2', text: 'When will my lunch be delivered?', sender: 'user', timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
 ];
 
 
@@ -129,25 +130,30 @@ const sendWhatsAppMessage = async (phone, message) => {
 }
 
 /**
- * Sends a message from the admin to a list of users.
+ * Sends a message from a specific sender to a list of users.
  * @param {string[]} userIds - An array of user IDs to send the message to.
  * @param {string} messageText - The message from the admin.
+ * @param {'user' | 'admin'} sender - Who is sending the message.
  */
-export const sendMessageToUsers = async (userIds, messageText) => {
+export const sendMessageToUsers = async (userIds, messageText, sender) => {
     const recipients = mockUsers.filter(user => userIds.includes(user.id));
     
     const newMessages = recipients.map(user => ({
         id: `msg-${Date.now()}-${user.id}`,
         userId: user.id,
         text: messageText,
-        sender: 'admin',
+        sender: sender,
         timestamp: new Date().toISOString(),
     }));
 
     mockMessages.push(...newMessages);
+    console.log(`Saving ${newMessages.length} new messages.`);
 
-    for (const user of recipients) {
-        await sendWhatsAppMessage(user.phone, messageText);
+    // Only send WhatsApp for admin broadcasts for this mock
+    if (sender === 'admin') {
+      for (const user of recipients) {
+          await sendWhatsAppMessage(user.phone, messageText);
+      }
     }
     
     return new Promise(resolve => setTimeout(resolve, 500));
@@ -162,37 +168,4 @@ export const getMessages = async (userId) => {
     if (!userId) return Promise.resolve([]);
     const messages = mockMessages.filter(msg => msg.userId === userId).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     return new Promise(resolve => setTimeout(() => resolve(messages), 300));
-};
-
-/**
- * Sends a message from a user to the admin.
- * @param {string} userId
- * @param {string} messageText
- * @returns {Promise<Message>}
- */
-export const sendMessage = async (userId, messageText) => {
-    const newMessage = {
-        id: `msg-${Date.now()}`,
-        userId,
-        text: messageText,
-        sender: 'user',
-        timestamp: new Date().toISOString(),
-    };
-    mockMessages.push(newMessage);
-    
-    console.log(`New message from ${userId}: "${messageText}"`);
-
-    // Simulate an admin auto-reply for demonstration
-    setTimeout(() => {
-        const autoReply = {
-            id: `msg-${Date.now() + 1}`,
-            userId,
-            text: "Thanks for your message. An admin will get back to you shortly.",
-            sender: 'admin',
-            timestamp: new Date().toISOString(),
-        };
-        mockMessages.push(autoReply);
-    }, 2000);
-
-    return new Promise(resolve => setTimeout(() => resolve(newMessage), 200));
 };
