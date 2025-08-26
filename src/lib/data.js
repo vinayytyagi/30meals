@@ -37,6 +37,15 @@
  * @property {string} description
  */
 
+ /**
+ * @typedef {object} Message
+ * @property {string} id
+ * @property {string} text
+ * @property {'user' | 'admin'} sender
+ * @property {string} timestamp
+ * @property {string} userId
+ */
+
 
 const mockUsers = [
   { id: 'user-1', name: 'Ananya Sharma', phone: '9876543210', remainingMeals: 18 },
@@ -61,6 +70,13 @@ const allSabjis = [
 ];
 
 let todaysMenu = [allSabjis[1], allSabjis[4]];
+
+/** @type {Message[]} */
+let mockMessages = [
+    { id: 'msg-1', userId: 'user-1', text: 'Hi, I have a question about my order.', sender: 'user', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
+    { id: 'msg-2', userId: 'user-1', text: 'Sure, how can I help you?', sender: 'admin', timestamp: new Date(Date.now() - 1000 * 60 * 4).toISOString() },
+];
+
 
 // --- User Functions ---
 
@@ -99,3 +115,85 @@ export const setTodaysMenu = async (menuItems) => {
         }, 500)
     });
 }
+
+// --- Chat/Notification Functions ---
+
+/**
+ * Simulates sending a WhatsApp message.
+ * In a real app, this would integrate with a service like Twilio.
+ * @param {string} phone 
+ * @param {string} message 
+ */
+const sendWhatsAppMessage = async (phone, message) => {
+    console.log(`Sending WhatsApp message to ${phone}: "${message}"`);
+    return Promise.resolve();
+}
+
+/**
+ * Sends a message to all users.
+ * @param {string} messageText The message from the admin.
+ */
+export const broadcastMessage = async (messageText) => {
+    const allUsers = await getAllUsers();
+    const newMessages = allUsers.map(user => ({
+        id: `msg-${Date.now()}-${user.id}`,
+        userId: user.id,
+        text: messageText,
+        sender: 'admin',
+        timestamp: new Date().toISOString(),
+    }));
+
+    // In a real app, you'd save this to a database.
+    mockMessages.push(...newMessages);
+
+    // Simulate sending WhatsApp messages
+    for (const user of allUsers) {
+        await sendWhatsAppMessage(user.phone, messageText);
+    }
+    
+    return new Promise(resolve => setTimeout(resolve, 500));
+};
+
+
+/**
+ * Get all messages for a specific user.
+ * @param {string} userId
+ * @returns {Promise<Message[]>}
+ */
+export const getMessages = async (userId) => {
+    const messages = mockMessages.filter(msg => msg.userId === userId);
+    return new Promise(resolve => setTimeout(() => resolve(messages), 300));
+};
+
+/**
+ * Sends a message from a user to the admin.
+ * @param {string} userId
+ * @param {string} messageText
+ * @returns {Promise<Message>}
+ */
+export const sendMessage = async (userId, messageText) => {
+    const newMessage = {
+        id: `msg-${Date.now()}`,
+        userId,
+        text: messageText,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+    };
+    mockMessages.push(newMessage);
+    // Here you might add logic to notify the admin
+    console.log(`New message from ${userId}: "${messageText}"`);
+
+    // Simulate an admin auto-reply for demonstration
+    setTimeout(() => {
+        const autoReply = {
+            id: `msg-${Date.now() + 1}`,
+            userId,
+            text: "Thanks for your message. An admin will get back to you shortly.",
+            sender: 'admin',
+            timestamp: new Date().toISOString(),
+        };
+        mockMessages.push(autoReply);
+    }, 2000);
+
+    return new Promise(resolve => setTimeout(() => resolve(newMessage), 200));
+};

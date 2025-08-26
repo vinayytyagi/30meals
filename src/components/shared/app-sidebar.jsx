@@ -20,7 +20,9 @@ import {
   Users, 
   BellDot,
   Home,
-  History
+  History,
+  MessageSquare,
+  Send
 } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -28,12 +30,14 @@ const adminNavLinks = [
   { href: '/admin/dashboard', label: 'Orders', icon: ClipboardList },
   { href: '/admin/menu', label: 'Set Menu', icon: ChefHat },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
-  { href: '/admin/notifications', label: 'Notifications', icon: BellDot },
+  { href: '/admin/notifications', label: 'Scheduler', icon: BellDot },
+  { href: '/admin/broadcast', label: 'Broadcast', icon: Send },
 ];
 
 const userNavLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/dashboard/history', label: 'Order History', icon: History },
+  { href: '/dashboard/chat', label: 'Chat with Admin', icon: MessageSquare },
 ];
 
 export function AppSidebar({ role }) {
@@ -59,7 +63,7 @@ export function AppSidebar({ role }) {
               <SidebarMenuItem key={link.href}>
                 <Link href={link.href} legacyBehavior passHref>
                   <SidebarMenuButton
-                    isActive={pathname === link.href}
+                    isActive={pathname.startsWith(link.href)}
                     tooltip={link.label}
                   >
                     <link.icon />
