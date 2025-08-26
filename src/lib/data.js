@@ -120,7 +120,6 @@ export const setTodaysMenu = async (menuItems) => {
 
 /**
  * Simulates sending a WhatsApp message.
- * In a real app, this would integrate with a service like Twilio.
  * @param {string} phone 
  * @param {string} message 
  */
@@ -130,12 +129,14 @@ const sendWhatsAppMessage = async (phone, message) => {
 }
 
 /**
- * Sends a message to all users.
- * @param {string} messageText The message from the admin.
+ * Sends a message from the admin to a list of users.
+ * @param {string[]} userIds - An array of user IDs to send the message to.
+ * @param {string} messageText - The message from the admin.
  */
-export const broadcastMessage = async (messageText) => {
-    const allUsers = await getAllUsers();
-    const newMessages = allUsers.map(user => ({
+export const sendMessageToUsers = async (userIds, messageText) => {
+    const recipients = mockUsers.filter(user => userIds.includes(user.id));
+    
+    const newMessages = recipients.map(user => ({
         id: `msg-${Date.now()}-${user.id}`,
         userId: user.id,
         text: messageText,
@@ -143,25 +144,23 @@ export const broadcastMessage = async (messageText) => {
         timestamp: new Date().toISOString(),
     }));
 
-    // In a real app, you'd save this to a database.
     mockMessages.push(...newMessages);
 
-    // Simulate sending WhatsApp messages
-    for (const user of allUsers) {
+    for (const user of recipients) {
         await sendWhatsAppMessage(user.phone, messageText);
     }
     
     return new Promise(resolve => setTimeout(resolve, 500));
 };
 
-
 /**
  * Get all messages for a specific user.
- * @param {string} userId
+ * @param {string | null} userId
  * @returns {Promise<Message[]>}
  */
 export const getMessages = async (userId) => {
-    const messages = mockMessages.filter(msg => msg.userId === userId);
+    if (!userId) return Promise.resolve([]);
+    const messages = mockMessages.filter(msg => msg.userId === userId).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     return new Promise(resolve => setTimeout(() => resolve(messages), 300));
 };
 
@@ -180,7 +179,7 @@ export const sendMessage = async (userId, messageText) => {
         timestamp: new Date().toISOString(),
     };
     mockMessages.push(newMessage);
-    // Here you might add logic to notify the admin
+    
     console.log(`New message from ${userId}: "${messageText}"`);
 
     // Simulate an admin auto-reply for demonstration

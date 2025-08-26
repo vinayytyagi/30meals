@@ -18,11 +18,9 @@ import {
   ClipboardList, 
   ChefHat, 
   Users, 
-  BellDot,
   Home,
   History,
-  MessageSquare,
-  Send
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -30,14 +28,13 @@ const adminNavLinks = [
   { href: '/admin/dashboard', label: 'Orders', icon: ClipboardList },
   { href: '/admin/menu', label: 'Set Menu', icon: ChefHat },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
-  { href: '/admin/notifications', label: 'Scheduler', icon: BellDot },
-  { href: '/admin/broadcast', label: 'Broadcast', icon: Send },
+  { href: '/admin/chat', label: 'Chat', icon: MessageSquare },
 ];
 
 const userNavLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/dashboard/history', label: 'Order History', icon: History },
-  { href: '/dashboard/chat', label: 'Chat with Admin', icon: MessageSquare },
+  { href: '/dashboard/chat', label: 'Chat', icon: MessageSquare },
 ];
 
 export function AppSidebar({ role }) {
