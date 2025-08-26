@@ -20,6 +20,7 @@ import { onAuthStateChanged } from 'firebase/auth';
  * @property {string} name
  * @property {string} phone
  * @property {number} remainingMeals
+ * @property {boolean} isAdmin
  * @property {number[]} last5Days
  * @property {string | null} mealStartDate
  */
@@ -102,6 +103,9 @@ const getCurrentUser = () => {
     });
   };
 
+/**
+ * @returns {Promise<User>}
+ */
 export const getLoggedInUser = async () => {
     const currentUser = await getCurrentUser();
     if (!currentUser) {
@@ -114,12 +118,19 @@ export const getLoggedInUser = async () => {
     throw new Error("User not found in database");
 };
 
+/**
+ * @param {string} userId 
+ * @returns {Promise<Order[]>}
+ */
 export const getOrderHistory = async (userId) => {
     const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('date', 'desc'));
     const querySnapshot = await getDocs(ordersQuery);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
+/**
+ * @returns {Promise<MenuItem[]>}
+ */
 export const getTodaysMenu = async () => {
     const menuDoc = await getDoc(doc(db, 'menu', 'todaysMenu'));
     if (menuDoc.exists() && menuDoc.data().items) {
@@ -130,12 +141,20 @@ export const getTodaysMenu = async () => {
 
 // --- Admin Functions ---
 
+/**
+ * @returns {Promise<Order[]>}
+ */
 const _fetchAllOrders = async () => {
     const ordersCollection = collection(db, 'orders');
     const ordersSnapshot = await getDocs(ordersCollection);
     return ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
+/**
+ * @param {string} userId 
+ * @param {Order[]} allOrders 
+ * @returns {string | null}
+ */
 const getMealStartDate = (userId, allOrders) => {
     const userOrders = allOrders
         .filter(o => o.userId === userId)
@@ -143,6 +162,11 @@ const getMealStartDate = (userId, allOrders) => {
     return userOrders.length > 0 ? userOrders[0].date : null;
 }
 
+/**
+ * @param {string} userId 
+ * @param {Order[]} allOrders 
+ * @returns {number[]}
+ */
 const calculateLast5Days = (userId, allOrders) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -159,6 +183,9 @@ const calculateLast5Days = (userId, allOrders) => {
     return last5DaysData;
 };
 
+/**
+ * @returns {Promise<User[]>}
+ */
 export const getAllUsers = async () => {
     const usersCollection = collection(db, 'users');
     const usersSnapshot = await getDocs(usersCollection);
@@ -176,16 +203,25 @@ export const getAllUsers = async () => {
     return usersWithData;
 };
 
+/**
+ * @returns {Promise<Order[]>}
+ */
 export const getAllOrders = async () => {
     return await _fetchAllOrders();
 };
 
+/**
+ * @returns {Promise<MenuItem[]>}
+ */
 export const getAllSabjis = async () => {
     const sabjisCollection = collection(db, 'sabjis');
     const sabjisSnapshot = await getDocs(sabjisCollection);
     return sabjisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
+/**
+ * @param {MenuItem[]} menuItems 
+ */
 export const setTodaysMenu = async (menuItems) => {
     await setDoc(doc(db, "menu", "todaysMenu"), { items: menuItems });
 }
