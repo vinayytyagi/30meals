@@ -54,11 +54,26 @@ const mockUsers = [
 ];
 
 const mockOrders = [
-  { id: 'order-1', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: '2023-10-26', status: 'Delivered', deliveryOtp: '112233' },
-  { id: 'order-2', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Dinner', mealChoice: '5 Rotis', date: '2023-10-26', status: 'Delivered', deliveryOtp: '445566' },
-  { id: 'order-3', userId: 'user-2', userName: 'Rohan Verma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: '2023-10-27', status: 'Pending', deliveryOtp: '778899' },
-  { id: 'order-4', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: '5 Rotis', date: '2023-10-27', status: 'Pending', deliveryOtp: '123123' },
-];
+    // Previous orders
+    { id: 'order-1', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: '2023-10-26', status: 'Delivered', deliveryOtp: '112233' },
+    { id: 'order-2', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Dinner', mealChoice: '5 Rotis', date: '2023-10-26', status: 'Delivered', deliveryOtp: '445566' },
+    { id: 'order-3', userId: 'user-2', userName: 'Rohan Verma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: '2023-10-27', status: 'Pending', deliveryOtp: '778899' },
+    { id: 'order-4', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: '5 Rotis', date: '2023-10-27', status: 'Pending', deliveryOtp: '123123' },
+  
+    // Add more orders for better analytics
+    // Today's date
+    { id: 'order-5', userId: 'user-2', userName: 'Rohan Verma', mealType: 'Dinner', mealChoice: '5 Rotis', date: new Date().toISOString().split('T')[0], status: 'Pending', deliveryOtp: '234234' },
+    { id: 'order-6', userId: 'user-3', userName: 'Priya Singh', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date().toISOString().split('T')[0], status: 'Pending', deliveryOtp: '345345' },
+    
+    // Yesterday
+    { id: 'order-7', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '456456' },
+    { id: 'order-8', userId: 'user-3', userName: 'Priya Singh', mealType: 'Lunch', mealChoice: '5 Rotis', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '567567' },
+    { id: 'order-9', userId: 'user-3', userName: 'Priya Singh', mealType: 'Dinner', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '678678' },
+  
+    // Two days ago
+    { id: 'order-10', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Dinner', mealChoice: '5 Rotis', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '789789' },
+    { id: 'order-11', userId: 'user-2', userName: 'Rohan Verma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '890890' },
+  ];
 
 const allSabjis = [
     { id: 'sabji-1', name: 'Aloo Gobi', description: 'Potatoes and cauliflower' },
@@ -116,6 +131,43 @@ export const setTodaysMenu = async (menuItems) => {
         }, 500)
     });
 }
+
+// --- Analytics Functions ---
+export const getAnalyticsData = async (userId = null) => {
+    const ordersToProcess = userId ? mockOrders.filter(o => o.userId === userId) : mockOrders;
+
+    const mealsByDate = ordersToProcess.reduce((acc, order) => {
+        const date = order.date;
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+    }, {});
+    
+    const chartData = Object.entries(mealsByDate).map(([date, meals]) => ({
+        date: new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        meals,
+    })).slice(-30); // Last 30 days
+
+    const mealChoicesCount = ordersToProcess.reduce((acc, order) => {
+        acc[order.mealChoice] = (acc[order.mealChoice] || 0) + 1;
+        return acc;
+    }, {});
+
+    const mostPopularChoice = Object.keys(mealChoicesCount).length > 0
+        ? Object.entries(mealChoicesCount).reduce((a, b) => a[1] > b[1] ? a : b)[0]
+        : 'N/A';
+    
+    const totalMeals = ordersToProcess.length;
+
+    const data = {
+        totalMeals,
+        mostPopularChoice,
+        chartData,
+        calendarData: mealsByDate
+    };
+
+    return new Promise(resolve => setTimeout(() => resolve(data), 800));
+};
+
 
 // --- Chat/Notification Functions ---
 

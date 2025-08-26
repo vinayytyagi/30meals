@@ -21,7 +21,8 @@ import {
   Home,
   History,
   MessageSquare,
-  BellDot
+  BellDot,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -31,12 +32,14 @@ const adminNavLinks = [
   { href: '/admin/users', label: 'Manage Users', icon: Users },
   { href: '/admin/chat', label: 'Chat', icon: MessageSquare },
   { href: '/admin/notifications', label: 'Notifications', icon: BellDot },
+  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
 const userNavLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/dashboard/history', label: 'Order History', icon: History },
   { href: '/dashboard/chat', label: 'Chat', icon: MessageSquare },
+  { href: '/dashboard/analytics', label: 'My Analytics', icon: BarChart3 },
 ];
 
 export function AppSidebar({ role }) {
