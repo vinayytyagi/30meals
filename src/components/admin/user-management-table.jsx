@@ -26,10 +26,50 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../ui/form';
+import { cn } from '@/lib/utils';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+  } from "@/components/ui/tooltip"
 
 const editMealsSchema = z.object({
   meals: z.coerce.number().min(0, 'Cannot be negative').max(100, 'Cannot be more than 100'),
 });
+
+function Last5DaysCell({ data }) {
+    const today = new Date();
+    const dates = Array.from({ length: 5 }).map((_, i) => {
+        const date = new Date();
+        date.setDate(today.getDate() - i);
+        return date;
+    }).reverse();
+
+    return (
+        <TooltipProvider>
+            <div className="flex gap-1">
+                {data.map((mealCount, index) => (
+                    <Tooltip key={index} delayDuration={100}>
+                        <TooltipTrigger>
+                            <div
+                                className={cn(
+                                'h-5 w-5 rounded-full',
+                                mealCount === 0 && 'bg-gray-200 dark:bg-gray-700',
+                                mealCount === 1 && 'bg-green-300 dark:bg-green-800',
+                                mealCount >= 2 && 'bg-green-600 dark:bg-green-500'
+                                )}
+                            />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{dates[index].toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}: {mealCount} meal(s)</p>
+                        </TooltipContent>
+                    </Tooltip>
+                ))}
+            </div>
+      </TooltipProvider>
+    );
+}
 
 export function UserManagementTable({ users: initialUsers }) {
   const [users, setUsers] = useState(initialUsers);
@@ -71,6 +111,7 @@ export function UserManagementTable({ users: initialUsers }) {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead>Last 5 Days</TableHead>
               <TableHead>Remaining Meals</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -80,6 +121,9 @@ export function UserManagementTable({ users: initialUsers }) {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.phone}</TableCell>
+                <TableCell>
+                  <Last5DaysCell data={user.last5Days} />
+                </TableCell>
                 <TableCell>{user.remainingMeals}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="outline" size="sm" onClick={() => openDialog(user)}>

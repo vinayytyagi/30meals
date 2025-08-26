@@ -4,6 +4,7 @@
  * @property {string} name
  * @property {string} phone
  * @property {number} remainingMeals
+ * @property {number[]} last5Days
  */
 
 /**
@@ -73,6 +74,9 @@ const mockOrders = [
     // Two days ago
     { id: 'order-10', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Dinner', mealChoice: '5 Rotis', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '789789' },
     { id: 'order-11', userId: 'user-2', userName: 'Rohan Verma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '890890' },
+
+    // Four days ago
+    { id: 'order-12', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '111222' },
   ];
 
 const allSabjis = [
@@ -111,8 +115,28 @@ export const getTodaysMenu = async () => {
 
 // --- Admin Functions ---
 
+const calculateLast5Days = (userId) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const last5DaysData = [];
+
+    for (let i = 4; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        
+        const mealsOnDay = mockOrders.filter(o => o.userId === userId && o.date.startsWith(dateString)).length;
+        last5DaysData.push(mealsOnDay);
+    }
+    return last5DaysData;
+};
+
 export const getAllUsers = async () => {
-    return new Promise(resolve => setTimeout(() => resolve(mockUsers), 500));
+    const usersWithLast5Days = mockUsers.map(user => ({
+        ...user,
+        last5Days: calculateLast5Days(user.id),
+    }));
+    return new Promise(resolve => setTimeout(() => resolve(usersWithLast5Days), 500));
 };
 
 export const getAllOrders = async () => {
@@ -143,7 +167,7 @@ export const getAnalyticsData = async (userId = null) => {
     }, {});
     
     const chartData = Object.entries(mealsByDate).map(([date, meals]) => ({
-        date: new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        name: new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
         meals,
     })).slice(-30);
 

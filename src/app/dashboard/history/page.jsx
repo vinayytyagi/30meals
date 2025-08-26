@@ -1,4 +1,4 @@
-import { getLoggedInUser, getOrderHistory } from '@/lib/data';
+import { getLoggedInUser, getOrderHistory, getAnalyticsData } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -16,10 +16,60 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { History } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+  } from "@/components/ui/tooltip"
+
+function Past5DaysSummary({ data }) {
+    const today = new Date();
+    const dates = Array.from({ length: 5 }).map((_, i) => {
+        const date = new Date();
+        date.setDate(today.getDate() - i);
+        return date;
+    }).reverse();
+
+    return (
+        <TooltipProvider>
+            <div className="flex gap-1.5">
+                {dates.map((date, index) => {
+                    const dateString = date.toISOString().split('T')[0];
+                    const mealCount = data[dateString] || 0;
+                    const dayInitial = date.toLocaleDateString('en-US', { weekday: 'narrow' });
+                    
+                    return (
+                        <Tooltip key={index} delayDuration={100}>
+                            <TooltipTrigger asChild>
+                                <div className='flex flex-col items-center gap-1'>
+                                <span className='text-xs text-muted-foreground'>{dayInitial}</span>
+                                <div
+                                    className={cn(
+                                    'h-5 w-5 rounded-full',
+                                    mealCount === 0 && 'bg-gray-200 dark:bg-gray-700',
+                                    mealCount === 1 && 'bg-green-300 dark:bg-green-800',
+                                    mealCount >= 2 && 'bg-green-600 dark:bg-green-500'
+                                    )}
+                                />
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}: {mealCount} meal(s)</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    );
+                })}
+            </div>
+      </TooltipProvider>
+    );
+}
 
 export default async function OrderHistoryPage() {
   const user = await getLoggedInUser();
   const orders = await getOrderHistory(user.id);
+  const analytics = await getAnalyticsData(user.id);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
@@ -34,9 +84,15 @@ export default async function OrderHistoryPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-            <div className='flex items-center gap-3'>
-                <History className="h-6 w-6 text-accent" />
-                <CardTitle>Your Orders</CardTitle>
+            <div className='flex items-center justify-between'>
+                <div className='flex items-center gap-3'>
+                    <History className="h-6 w-6 text-accent" />
+                    <CardTitle>Your Orders</CardTitle>
+                </div>
+                <div className='text-right'>
+                    <h4 className='text-sm font-medium text-muted-foreground'>Last 5 Days</h4>
+                    <Past5DaysSummary data={analytics.calendarData} />
+                </div>
             </div>
           <CardDescription>
             {orders.length} orders found for {user.name}.
