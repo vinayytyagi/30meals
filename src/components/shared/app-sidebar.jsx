@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Sidebar,
   SidebarHeader,
@@ -22,9 +22,12 @@ import {
   History,
   MessageSquare,
   BellDot,
-  BarChart3
+  BarChart3,
+  User
 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const adminNavLinks = [
   { href: '/admin/dashboard', label: 'Orders', icon: ClipboardList },
@@ -40,11 +43,31 @@ const userNavLinks = [
   { href: '/dashboard/history', label: 'Order History', icon: History },
   { href: '/dashboard/chat', label: 'Chat', icon: MessageSquare },
   { href: '/dashboard/analytics', label: 'My Analytics', icon: BarChart3 },
+  { href: '/dashboard/profile', label: 'My Profile', icon: User },
 ];
 
 export function AppSidebar({ role }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
   const navLinks = role === 'admin' ? adminNavLinks : userNavLinks;
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+      router.push('/');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'Something went wrong. Please try again.',
+      });
+    }
+  };
 
   return (
     <>
@@ -77,12 +100,10 @@ export function AppSidebar({ role }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="group-data-[collapsible=icon]:p-0">
-          <Link href="/">
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <LogOut size={16} />
-              <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-            </Button>
-          </Link>
+          <Button onClick={handleLogout} variant="ghost" className="w-full justify-start gap-2">
+            <LogOut size={16} />
+            <span className="group-data-[collapsible=icon]:hidden">Logout</span>
+          </Button>
         </SidebarFooter>
       </Sidebar>
       <div className="p-2 md:hidden">

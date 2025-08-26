@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { 
     collection, 
     getDocs, 
@@ -68,7 +68,7 @@ const seedInitialData = async () => {
     const sabjisCollection = collection(db, 'sabjis');
     const sabjisSnapshot = await getDocs(sabjisCollection);
     if (sabjisSnapshot.empty) {
-        console.log("Seeding initial sabjis and users...");
+        console.log("Seeding initial sabjis...");
         const batch = writeBatch(db);
         const allSabjis = [
             { id: 'sabji-1', name: 'Aloo Gobi', description: 'Potatoes and cauliflower' },
@@ -82,20 +82,8 @@ const seedInitialData = async () => {
             const docRef = doc(db, 'sabjis', sabji.id);
             batch.set(docRef, sabji);
         });
-
-        const users = [
-          { id: 'user-1', name: 'Ananya Sharma', phone: '9876543210', remainingMeals: 18 },
-          { id: 'user-2', name: 'Rohan Verma', phone: '8765432109', remainingMeals: 25 },
-          { id: 'user-3', name: 'Priya Singh', phone: '7654321098', remainingMeals: 5 },
-        ];
-
-        users.forEach(user => {
-            const userRef = doc(db, 'users', user.id);
-            batch.set(userRef, {name: user.name, phone: user.phone, remainingMeals: user.remainingMeals});
-        });
-
         await batch.commit();
-        console.log("Initial data seeded.");
+        console.log("Initial sabjis seeded.");
     }
 };
 
@@ -106,12 +94,15 @@ seedInitialData().catch(console.error);
 
 export const getLoggedInUser = async () => {
     // In a real app, you'd get the logged-in user's ID from an auth context.
-    // For now, we'll continue to mock getting 'user-1'.
-    const userDoc = await getDoc(doc(db, 'users', 'user-1'));
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        throw new Error("User not authenticated");
+    }
+    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
     if (userDoc.exists()) {
         return { id: userDoc.id, ...userDoc.data() };
     }
-    throw new Error("User not found");
+    throw new Error("User not found in database");
 };
 
 export const getOrderHistory = async (userId) => {
