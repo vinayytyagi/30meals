@@ -60,7 +60,7 @@ export function AppSidebar({ role }) {
           <SidebarMenu>
             {navLinks.map((link) => (
               <SidebarMenuItem key={link.href}>
-                <Link href={link.href} legacyBehavior passHref>
+                <Link href={link.href}>
                   <SidebarMenuButton
                     isActive={pathname.startsWith(link.href)}
                     tooltip={link.label}
@@ -74,7 +74,7 @@ export function AppSidebar({ role }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="group-data-[collapsible=icon]:p-0">
-          <Link href="/" legacyBehavior passHref>
+          <Link href="/">
             <Button variant="ghost" className="w-full justify-start gap-2">
               <LogOut size={16} />
               <span className="group-data-[collapsible=icon]:hidden">Logout</span>
