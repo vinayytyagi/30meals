@@ -101,7 +101,7 @@ export const getLoggedInUser = async () => {
 };
 
 export const getOrderHistory = async (userId) => {
-  const userOrders = mockOrders.filter(order => order.userId === userId);
+  const userOrders = mockOrders.filter(order => order.userId === userId).sort((a, b) => new Date(b.date) - new Date(a.date));
   return new Promise(resolve => setTimeout(() => resolve(userOrders), 500));
 };
 
@@ -137,7 +137,7 @@ export const getAnalyticsData = async (userId = null) => {
     const ordersToProcess = userId ? mockOrders.filter(o => o.userId === userId) : mockOrders;
 
     const mealsByDate = ordersToProcess.reduce((acc, order) => {
-        const date = order.date;
+        const date = order.date.split('T')[0];
         acc[date] = (acc[date] || 0) + 1;
         return acc;
     }, {});
@@ -145,7 +145,7 @@ export const getAnalyticsData = async (userId = null) => {
     const chartData = Object.entries(mealsByDate).map(([date, meals]) => ({
         date: new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
         meals,
-    })).slice(-30); // Last 30 days
+    })).slice(-30);
 
     const mealChoicesCount = ordersToProcess.reduce((acc, order) => {
         acc[order.mealChoice] = (acc[order.mealChoice] || 0) + 1;
@@ -158,11 +158,48 @@ export const getAnalyticsData = async (userId = null) => {
     
     const totalMeals = ordersToProcess.length;
 
+    const mealsByDayOfWeek = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
+    ordersToProcess.forEach(order => {
+        const day = new Date(order.date).toLocaleDateString('en-US', { weekday: 'short' });
+        mealsByDayOfWeek[day]++;
+    });
+    const weekChartData = Object.entries(mealsByDayOfWeek).map(([day, meals]) => ({ name: day, meals }));
+
+    let currentStreak = 0;
+    let maxStreak = 0;
+    let lastOrderDate = null;
+    const sortedDates = Object.keys(mealsByDate).sort((a,b) => new Date(a) - new Date(b));
+    for (const date of sortedDates) {
+        const currentDate = new Date(date);
+        if (lastOrderDate) {
+            const diffDays = (currentDate - lastOrderDate) / (1000 * 60 * 60 * 24);
+            if (diffDays === 1) {
+                currentStreak++;
+            } else {
+                maxStreak = Math.max(maxStreak, currentStreak);
+                currentStreak = 1;
+            }
+        } else {
+            currentStreak = 1;
+        }
+        lastOrderDate = currentDate;
+    }
+    maxStreak = Math.max(maxStreak, currentStreak);
+
+
     const data = {
         totalMeals,
         mostPopularChoice,
         chartData,
-        calendarData: mealsByDate
+        calendarData: mealsByDate,
+        recentOrders: ordersToProcess.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5),
+        weekChartData,
+        streaks: {
+            current: currentStreak,
+            max: maxStreak
+        },
+        mealsUsed: totalMeals, // Simplified for this mock
+        mealsSkipped: 0, // Needs logic
     };
 
     return new Promise(resolve => setTimeout(() => resolve(data), 800));

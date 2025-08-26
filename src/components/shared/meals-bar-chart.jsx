@@ -1,26 +1,76 @@
 'use client';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { TrendingUp } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
-export function MealsBarChart({ data }) {
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+  } from '@/components/ui/card';
+  import {
+    ChartContainer,
+    ChartTooltipContent,
+  } from '@/components/ui/chart';
+
+export function MealsBarChart({ data, title, description, footerText }) {
+    const chartConfig = {
+        meals: {
+          label: "Meals",
+          color: "hsl(var(--primary))",
+        },
+    }
+
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data}>
-        <XAxis
-          dataKey="date"
-          stroke="#888888"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          stroke="#888888"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(value) => `${value}`}
-        />
-        <Bar dataKey="meals" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig}>
+            <BarChart
+                accessibilityLayer
+                data={data}
+                margin={{
+                left: 12,
+                right: 12,
+                }}
+            >
+                <CartesianGrid vertical={false} />
+                <YAxis
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `${value}`}
+                    />
+                <XAxis
+                    dataKey="name"
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                />
+                 <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Bar dataKey="meals" fill="var(--color-meals)" radius={4} />
+          </BarChart>
+        </ChartContainer>
+      </CardContent>
+      <CardFooter>
+        <div className="flex w-full items-start gap-2 text-sm">
+          <div className="grid gap-2">
+            <div className="flex items-center gap-2 font-medium leading-none">
+              {footerText} <TrendingUp className="h-4 w-4" />
+            </div>
+          </div>
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
