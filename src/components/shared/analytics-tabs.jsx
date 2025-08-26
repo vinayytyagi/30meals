@@ -20,11 +20,100 @@ import {
     TabsTrigger,
   } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, CalendarDays, Utensils, Flame, Repeat, Award } from 'lucide-react';
+import { BarChart3, CalendarDays, Utensils, Flame, Repeat, Award, User, Phone, Calendar as CalendarIcon } from 'lucide-react';
 import { MealsBarChart } from '@/components/shared/meals-bar-chart';
 import { AnalyticsCalendar } from '@/components/shared/analytics-calendar';
+import { Last5DaysCell } from '@/components/shared/last-5-days-cell';
 
-export function AnalyticsTabs({ analytics }) {
+function AdminDetailsTab({ users }) {
+    return (
+        <Card className="shadow-lg mt-6">
+            <CardHeader>
+                <CardTitle>All Users</CardTitle>
+                <CardDescription>
+                    A detailed list of all users and their activity.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Meal Plan Start</TableHead>
+                        <TableHead>Last 5 Days</TableHead>
+                        <TableHead className="text-right">Remaining Meals</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {users.map((user) => (
+                        <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.phone}</TableCell>
+                        <TableCell>
+                            {user.mealStartDate ? new Date(user.mealStartDate).toLocaleDateString('en-IN', {
+                                day: 'numeric', month: 'short', year: 'numeric'
+                            }) : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                            <Last5DaysCell data={user.last5Days} />
+                        </TableCell>
+                        <TableCell className="text-right">{user.remainingMeals}</TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    )
+}
+
+function UserDetailsTab({ orders }) {
+    return (
+        <Card className="shadow-lg mt-6">
+            <CardHeader>
+                <CardTitle>Recent Orders</CardTitle>
+                <CardDescription>
+                    A list of your most recent orders.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Meal</TableHead>
+                        <TableHead>Choice</TableHead>
+                        <TableHead className="text-right">Status</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {orders.map((order) => (
+                        <TableRow key={order.id}>
+                        <TableCell>
+                            {new Date(order.date).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            })}
+                        </TableCell>
+                        <TableCell>{order.mealType}</TableCell>
+                        <TableCell>{order.mealChoice}</TableCell>
+                        <TableCell className="text-right">
+                            <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className={order.status === 'Delivered' ? 'bg-green-600' : ''}>
+                            {order.status}
+                            </Badge>
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    )
+}
+
+export function AnalyticsTabs({ analytics, role, allUsers }) {
     return (
         <Tabs defaultValue="overview" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -112,48 +201,11 @@ export function AnalyticsTabs({ analytics }) {
                 </Card>
             </TabsContent>
             <TabsContent value="details">
-            <Card className="shadow-lg mt-6">
-                <CardHeader>
-                    <CardTitle>Recent Orders</CardTitle>
-                    <CardDescription>
-                        A list of the most recent orders.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Meal</TableHead>
-                            <TableHead>Choice</TableHead>
-                            <TableHead className="text-right">Status</TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {analytics.recentOrders.map((order) => (
-                            <TableRow key={order.id}>
-                            <TableCell>{order.userName}</TableCell>
-                            <TableCell>
-                                {new Date(order.date).toLocaleDateString('en-IN', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                                })}
-                            </TableCell>
-                            <TableCell>{order.mealType}</TableCell>
-                            <TableCell>{order.mealChoice}</TableCell>
-                            <TableCell className="text-right">
-                                <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className={order.status === 'Delivered' ? 'bg-green-600' : ''}>
-                                {order.status}
-                                </Badge>
-                            </TableCell>
-                            </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-                </Card>
+                {role === 'admin' ? (
+                    <AdminDetailsTab users={allUsers} />
+                ) : (
+                    <UserDetailsTab orders={analytics.recentOrders} />
+                )}
             </TabsContent>
         </Tabs>
     );

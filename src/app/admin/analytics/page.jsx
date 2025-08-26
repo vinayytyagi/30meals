@@ -34,7 +34,7 @@ export default async function AdminAnalyticsPage({ searchParams }) {
       <AnalyticsFilter users={users} />
 
       <Suspense fallback={<AnalyticsFallback />} key={userId}>
-        <AnalyticsTabs analytics={analytics} />
+        <AnalyticsTabs analytics={analytics} allUsers={users} role="admin" />
       </Suspense>
       
     </div>

@@ -5,6 +5,7 @@
  * @property {string} phone
  * @property {number} remainingMeals
  * @property {number[]} last5Days
+ * @property {string | null} mealStartDate
  */
 
 /**
@@ -77,7 +78,7 @@ const mockOrders = [
 
     // Four days ago
     { id: 'order-12', userId: 'user-1', userName: 'Ananya Sharma', mealType: 'Lunch', mealChoice: 'Rice + 4 Rotis', date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0], status: 'Delivered', deliveryOtp: '111222' },
-  ];
+];
 
 const allSabjis = [
     { id: 'sabji-1', name: 'Aloo Gobi', description: 'Potatoes and cauliflower' },
@@ -115,6 +116,13 @@ export const getTodaysMenu = async () => {
 
 // --- Admin Functions ---
 
+const getMealStartDate = (userId) => {
+    const userOrders = mockOrders
+        .filter(o => o.userId === userId)
+        .sort((a,b) => new Date(a.date) - new Date(b.date));
+    return userOrders.length > 0 ? userOrders[0].date : null;
+}
+
 const calculateLast5Days = (userId) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -132,11 +140,12 @@ const calculateLast5Days = (userId) => {
 };
 
 export const getAllUsers = async () => {
-    const usersWithLast5Days = mockUsers.map(user => ({
+    const usersWithData = mockUsers.map(user => ({
         ...user,
         last5Days: calculateLast5Days(user.id),
+        mealStartDate: getMealStartDate(user.id),
     }));
-    return new Promise(resolve => setTimeout(() => resolve(usersWithLast5Days), 500));
+    return new Promise(resolve => setTimeout(() => resolve(usersWithData), 500));
 };
 
 export const getAllOrders = async () => {
@@ -159,6 +168,9 @@ export const setTodaysMenu = async (menuItems) => {
 // --- Analytics Functions ---
 export const getAnalyticsData = async (userId = null) => {
     const ordersToProcess = userId ? mockOrders.filter(o => o.userId === userId) : mockOrders;
+    
+    // For admin view, we might want to get all users data
+    const allUsers = userId ? null : await getAllUsers();
 
     const mealsByDate = ordersToProcess.reduce((acc, order) => {
         const date = order.date.split('T')[0];
@@ -216,7 +228,8 @@ export const getAnalyticsData = async (userId = null) => {
         mostPopularChoice,
         chartData,
         calendarData: mealsByDate,
-        recentOrders: ordersToProcess.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5),
+        recentOrders: ordersToProcess.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10),
+        allUsers, // This will be null if a userId is provided
         weekChartData,
         streaks: {
             current: currentStreak,

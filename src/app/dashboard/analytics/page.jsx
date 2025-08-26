@@ -26,7 +26,7 @@ export default async function UserAnalyticsPage() {
       </header>
 
       <Suspense fallback={<AnalyticsFallback />}>
-        <AnalyticsTabs analytics={analytics} />
+        <AnalyticsTabs analytics={analytics} role="user" />
       </Suspense>
 
     </div>
